@@ -1,89 +1,85 @@
-﻿using MoreLinq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using MoreLinq;
 using WordleBot.Model;
 using WordleBot.Persistence;
 using WordleBot.Solver;
+using WordleBot.Wordle;
 
 namespace WordleBot
 {
     public static class Program
     {
-        private static readonly DateTime WordleEpoch = new DateTime(2021, 6, 19);
-
-        private static int GetWordleIndex() => WordleEpoch.GetDateOffset(DateTime.Now) % Dictionary.Words.Length;
-
-        // TODO: add args switch for date/random mode
+        // TODO: add args switch for behaviours
         private static bool useRandomSolution = false;
+        private static bool useStrictMode = true;
+        private static bool useFullDictionary = true;
 
         public static void Main()
         {
-            Console.WriteLine("WORDLEbot v1.0");
+            Console.WriteLine("WORDLEbot v1.1");
 
-            Dictionary.Words.Validate();
-
-            List<string> wordList =
-                Dictionary.Words
-                .Select(s => s.ToUpperInvariant())
-                .ToList();
-
-            // TODO: Incorporate full word list including non-solutions (human players don't have the advantage of knowing whether a word is in the solutions list)
+            IList<string> solutions = Dictionary.Solutions.Normalise().ToList();
+            IList<string> allWords = useFullDictionary
+                ? Dictionary.AllWords.Normalise().ToList()
+                : solutions;
 
             string solution;
             if (useRandomSolution)
             {
-                solution = wordList.SingleRandom();
-                Console.WriteLine($"Seeking solution: {solution}");
+                solution = solutions.SingleRandom();
+                Console.WriteLine($"Seeking random solution: {solution}");
             }
             else
             {
-                int index = GetWordleIndex();
-                solution = wordList[index];
-                Console.WriteLine($"Seeking solution for Wordle {index}");
+                int index = DateTime.Now.GetSolutionIndex();
+                solution = solutions[index];
+                Console.WriteLine($"Seeking solution to Wordle {index}");
             }
 
             var sw = new Stopwatch();
             sw.Start();
 
-            foreach (var (rankedCandidates, guess, flags) in wordList.Solve(solution.GetEvaluator()))
+            foreach (var (scores, guess, flags) in allWords.Solve(solutions, solution.GetEvaluator(), useStrictMode))
             {
                 Console.WriteLine($"\n[{sw.Elapsed:hh\\:mm\\:ss\\.fff}]");
-                foreach (CandidateRank candidate in rankedCandidates.Take(10))
+                foreach (GuessScore score in scores.Take(10))
                 {
-                    Console.WriteLine($"... {candidate.Guess} {candidate.AverageMatches:0.##}");
+                    Console.WriteLine($"... {score.Guess} {score.AverageMatches:0.##}");
                 }
                 Console.WriteLine($"Guess: {guess}? -> {guess.ToResultString(flags)}");
             }
         }
 
-        private static IEnumerable<(IList<CandidateRank> RankedCandidates, string Guess, Flags[] Flags)> Solve(this IList<string> candidates, Func<string, Flags[]> evaluator)
+        private static IEnumerable<(IList<GuessScore> Scores, string Guess, Flags[] Flags)> Solve(this IList<string> allWords, IList<string> candidates, Func<string, Flags[]> evaluator, bool useStrictMode)
         {
-            if (!candidates.TryLoadInitialState(out IList<CandidateRank> rankedCandidates))
+            allWords.Validate(candidates);
+
+            if (!allWords.TryLoadInitialState(out IList<GuessScore> scores))
             {
-                rankedCandidates = candidates.Rank();
-                rankedCandidates.SaveInitialState();
+                scores = allWords.Rank(candidates);
+                scores.SaveInitialState();
             }
 
             Flags[] flags;
             do
             {
-                string guess = rankedCandidates.MinBy(c => c.AverageMatches).SingleRandom().Guess;
+                string guess = scores.MinBy(r => r.AverageMatches).SingleRandom().Guess;
                 flags = evaluator(guess);
 
-                yield return (rankedCandidates, guess, flags);
+                yield return (scores, guess, flags);
 
                 candidates = candidates.Eliminate(guess, flags).ToList();
-                rankedCandidates = candidates.Rank();
+
+                scores = useStrictMode || candidates.Count == 1
+                    ? candidates.Rank(candidates)
+                    : allWords.Rank(candidates);
             }
             while (!flags.IsSolved() && candidates.Any());
         }
 
-        private static int GetDateOffset(this DateTime epoch, DateTime date)
-        {
-            TimeSpan offset = date.Date - epoch.Date;
-            return (int) Math.Floor(offset.TotalDays);
-        }
+        private static IEnumerable<string> Normalise(this IEnumerable<string> source) => source.Select(s => s.ToUpperInvariant());
     }
 }

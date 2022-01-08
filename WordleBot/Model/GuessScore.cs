@@ -2,16 +2,19 @@
 
 namespace WordleBot.Model
 {
-    public struct CandidateRank
+    public struct GuessScore
     {
         [JsonConstructor]
-        public CandidateRank(string guess, double averageMatches)
+        public GuessScore(string guess, double averageMatches)
         {
             Guess = guess;
             AverageMatches = averageMatches;
         }
 
+        [JsonInclude]
         public string Guess { get; }
+
+        [JsonInclude]
         public double AverageMatches { get; }
     }
 }

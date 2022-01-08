@@ -9,37 +9,47 @@ namespace WordleBot.Persistence
 {
     public static class PersistenceExtensions
     {
-        public static string GetInitialStateFileName(int hash) => $"InitialState.{hash:X8}.json";
+        public static string ApplicationName = nameof(Wordle);
     
-        public static void SaveInitialState(this IEnumerable<CandidateRank> candidates)
+        public static void SaveInitialState(this IEnumerable<GuessScore> scores)
         {
-            IList<CandidateRank> candidateList = candidates.ToList();
+            IList<GuessScore> candidateList = scores.ToList();
             int hash = candidateList.Select(c => c.Guess).GetStableHashCode();
             string json = JsonSerializer.Serialize(new InitialState(candidateList));
-            File.WriteAllText(GetInitialStateFileName(hash), json);
+            string filePath = GetInitialStateFilePath(hash);
+            File.WriteAllText(filePath, json);
         }
 
-        public static bool TryLoadInitialState(this IEnumerable<string> candidates, out IList<CandidateRank> rankedCandidates)
+        public static bool TryLoadInitialState(this IEnumerable<string> words, out IList<GuessScore> scores)
         {
-            int hash = candidates.GetStableHashCode();
-            string fileName = GetInitialStateFileName(hash);
-            if (!File.Exists(fileName))
+            int hash = words.GetStableHashCode();
+            string filePath = GetInitialStateFilePath(hash);
+            if (!File.Exists(filePath))
             {
-                rankedCandidates = null;
+                scores = null;
                 return false;
             }
 
-            string json = File.ReadAllText(fileName);
+            string json = File.ReadAllText(filePath);
             InitialState initialState = JsonSerializer.Deserialize<InitialState>(json);
 
-            if (!candidates.AreEqualTo(initialState.Candidates.Select(c => c.Guess)))
+            if (!words.AreEqualTo(initialState.Candidates.Select(c => c.Guess)))
             {
-                rankedCandidates = null;
+                scores = null;
                 return false;
             }
 
-            rankedCandidates = initialState.Candidates;
+            scores = initialState.Candidates;
             return true;
+        }
+
+        public static string GetInitialStateFilePath(int hash) => GetDataFilePath($"InitialState.{hash:X8}.json");
+        private static string GetDataFilePath(string filename) => Path.Combine(GetDataFolderPath(), filename);
+        private static string GetDataFolderPath()
+        {
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ApplicationName);
+            Directory.CreateDirectory(path);
+            return path;
         }
 
         private static bool AreEqualTo(this IEnumerable<string> a, IEnumerable<string> b)

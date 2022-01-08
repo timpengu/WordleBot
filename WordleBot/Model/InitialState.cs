@@ -2,5 +2,5 @@
 
 namespace WordleBot.Model
 {
-    public record InitialState(IList<CandidateRank> Candidates);
+    public record InitialState(IList<GuessScore> Candidates);
 }

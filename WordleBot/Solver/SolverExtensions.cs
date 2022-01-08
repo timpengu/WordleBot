@@ -6,25 +6,31 @@ using WordleBot.Model;
 
 namespace WordleBot.Solver
 {
-    public static class MatchingExtensions
+    public static class SolverExtensions
     {
-        public static void Validate(this IList<string> candidates)
+        public static void Validate(this IList<string> allWords, IList<string> candidates)
         {
-            var firstCandidate = candidates.First();
-            var inconsistentCandidate = candidates.Skip(1).FirstOrDefault(candidate => candidate.Length != firstCandidate.Length);
-            if (inconsistentCandidate != null)
+            int expectedLength = allWords.First().Length;
+            string unexpectedLengthWord = allWords.FirstOrDefault(w => w.Length != expectedLength);
+            if (unexpectedLengthWord != null)
             {
-                throw new Exception($"Inconsistent lengths: {firstCandidate} {inconsistentCandidate}");
+                throw new Exception($"Word has unexpected length: {unexpectedLengthWord}");
+            }
+
+            var missingCandidates = candidates.Except(allWords).Take(10).ToList();
+            if (missingCandidates.Any())
+            {
+                throw new Exception($"Candidate/s not in word list: {String.Join(", ", missingCandidates)}");
             }
         }
 
         public static bool IsSolved(this Flags[] flags) => flags.All(f => f == Flags.Matched);
 
-        public static IList<CandidateRank> Rank(this IList<string> candidates)
+        public static IList<GuessScore> Rank(this IEnumerable<string> allWords, IList<string> candidates)
         {
-            return candidates
+            return allWords
                 .AsParallel()
-                .Select(guess => new CandidateRank(guess, candidates.GetAverageMatches(guess)))
+                .Select(guess => new GuessScore(guess, candidates.GetAverageMatches(guess)))
                 .OrderBy(g => g.AverageMatches)
                 .ToList();
         }
