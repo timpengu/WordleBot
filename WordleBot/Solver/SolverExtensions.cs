@@ -3,30 +3,44 @@ using System.Collections.Generic;
 using System.Linq;
 using MoreLinq;
 using WordleBot.Model;
+using WordleBot.Persistence;
 
 namespace WordleBot.Solver
 {
     public static class SolverExtensions
     {
-        public static void Validate(this IList<string> allWords, IList<string> candidates)
-        {
-            int expectedLength = allWords.First().Length;
-            string unexpectedLengthWord = allWords.FirstOrDefault(w => w.Length != expectedLength);
-            if (unexpectedLengthWord != null)
-            {
-                throw new Exception($"Word has unexpected length: {unexpectedLengthWord}");
-            }
-
-            var missingCandidates = candidates.Except(allWords).Take(10).ToList();
-            if (missingCandidates.Any())
-            {
-                throw new Exception($"Candidate/s not in word list: {String.Join(", ", missingCandidates)}");
-            }
-        }
-
+        public static Func<string, Flags[]> GetEvaluator(this string solution) => guess => solution.EvaluateGuess(guess);
         public static bool IsSolved(this Flags[] flags) => flags.All(f => f == Flags.Matched);
 
-        public static IList<GuessScore> Rank(this IEnumerable<string> allWords, IList<string> candidates)
+        // TODO: replace return tuple with named class
+        public static IEnumerable<(IList<GuessScore> Scores, string Guess, Flags[] Flags)> Solve(this IList<string> allWords, IList<string> candidates, Func<string, Flags[]> evaluator, bool useNonCandidates)
+        {
+            Validator.Validate(allWords, candidates);
+
+            if (!allWords.TryLoad(out IList<GuessScore> scores))
+            {
+                scores = allWords.Rank(candidates);
+                scores.Save();
+            }
+
+            Flags[] flags;
+            do
+            {
+                string guess = scores.MinBy(r => r.AverageMatches).SingleRandom().Guess;
+                flags = evaluator(guess);
+
+                yield return (scores, guess, flags);
+
+                candidates = candidates.Eliminate(guess, flags).ToList();
+
+                scores = useNonCandidates && candidates.Count > 1
+                    ? allWords.Rank(candidates)
+                    : candidates.Rank(candidates);
+            }
+            while (!flags.IsSolved() && candidates.Any());
+        }
+
+        private static IList<GuessScore> Rank(this IEnumerable<string> allWords, IList<string> candidates)
         {
             return allWords
                 .AsParallel()
@@ -35,7 +49,7 @@ namespace WordleBot.Solver
                 .ToList();
         }
 
-        public static double GetAverageMatches(this IList<string> candidates, string guess)
+        private static double GetAverageMatches(this IList<string> candidates, string guess)
         {
             // calculate the average number of remaining candidates given this guess
             return candidates
@@ -48,13 +62,13 @@ namespace WordleBot.Solver
                 .Average();
         }
 
-        public static IEnumerable<string> Eliminate(this IEnumerable<string> candidates, string guess, Flags[] flags)
+        private static IEnumerable<string> Eliminate(this IEnumerable<string> candidates, string guess, Flags[] flags)
         {
             return candidates.Where(candidate => candidate.IsMatch(guess, flags));
         }
 
         // TODO: optimise this for inner loop
-        public static bool IsMatch(this string candidate, string guess, Flags[] flags)
+        private static bool IsMatch(this string candidate, string guess, Flags[] flags)
         {
             if (flags.Length != guess.Length)
             {
@@ -111,10 +125,8 @@ namespace WordleBot.Solver
             return true;
         }
 
-        public static Func<string, Flags[]> GetEvaluator(this string solution) => guess => solution.EvaluateGuess(guess);
-
         // TODO: optimise, return Span<Flags> ?
-        public static Flags[] EvaluateGuess(this string solution, string guess)
+        private static Flags[] EvaluateGuess(this string solution, string guess)
         {
             if (guess.Length != solution.Length)
             {
@@ -150,18 +162,6 @@ namespace WordleBot.Solver
             }
 
             return flags;
-        }
-
-        private static bool TryRemove(this List<char> chars, char value)
-        {
-            int pos = chars.FindIndex(c => c == value);
-            if (pos < 0)
-            {
-                return false;
-            }
-
-            chars.RemoveAt(pos);
-            return true;
         }
     }
 }

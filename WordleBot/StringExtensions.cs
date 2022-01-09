@@ -6,7 +6,7 @@ namespace WordleBot
 {
     internal static class StringExtensions
     {
-        public static string ToResultString(this string guess, Flags[] flags)
+        public static string ToFlagString(this string guess, Flags[] flags)
         {
             if (flags.Length != guess.Length)
             {

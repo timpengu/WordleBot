@@ -11,19 +11,18 @@ namespace WordleBot.Persistence
     {
         public static string ApplicationName = nameof(Wordle);
     
-        public static void SaveInitialState(this IEnumerable<GuessScore> scores)
+        public static void Save(this IList<GuessScore> scores)
         {
-            IList<GuessScore> candidateList = scores.ToList();
-            int hash = candidateList.Select(c => c.Guess).GetStableHashCode();
-            string json = JsonSerializer.Serialize(new InitialState(candidateList));
-            string filePath = GetInitialStateFilePath(hash);
+            int hash = scores.Select(c => c.Guess).GetStableHashCode();
+            string json = JsonSerializer.Serialize(scores);
+            string filePath = GetStateFilePath(hash);
             File.WriteAllText(filePath, json);
         }
 
-        public static bool TryLoadInitialState(this IEnumerable<string> words, out IList<GuessScore> scores)
+        public static bool TryLoad(this IEnumerable<string> words, out IList<GuessScore> scores)
         {
             int hash = words.GetStableHashCode();
-            string filePath = GetInitialStateFilePath(hash);
+            string filePath = GetStateFilePath(hash);
             if (!File.Exists(filePath))
             {
                 scores = null;
@@ -31,19 +30,19 @@ namespace WordleBot.Persistence
             }
 
             string json = File.ReadAllText(filePath);
-            InitialState initialState = JsonSerializer.Deserialize<InitialState>(json);
+            var loadedScores = JsonSerializer.Deserialize<IList<GuessScore>>(json);
 
-            if (!words.AreEqualTo(initialState.Candidates.Select(c => c.Guess)))
+            if (!words.AreEqualTo(loadedScores.Select(c => c.Guess)))
             {
                 scores = null;
                 return false;
             }
 
-            scores = initialState.Candidates;
+            scores = loadedScores;
             return true;
         }
 
-        public static string GetInitialStateFilePath(int hash) => GetDataFilePath($"InitialState.{hash:X8}.json");
+        public static string GetStateFilePath(int hash) => GetDataFilePath($"State.{hash:X8}.json");
         private static string GetDataFilePath(string filename) => Path.Combine(GetDataFolderPath(), filename);
         private static string GetDataFolderPath()
         {
