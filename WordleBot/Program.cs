@@ -38,12 +38,13 @@ namespace WordleBot
             var sw = new Stopwatch();
             sw.Start();
 
+            var solutionsSet = new HashSet<string>(solutions);
             foreach (var (scores, guess, flags) in allWords.Solve(solutions, solution.GetEvaluator(), useNonCandidates))
             {
                 Console.WriteLine($"\n[{sw.Elapsed:hh\\:mm\\:ss\\.fff}]");
                 foreach (GuessScore score in scores.Take(10))
                 {
-                    Console.WriteLine($"... {score.Guess} {score.AverageMatches:0.##}");
+                    Console.WriteLine($" {(solutionsSet.Contains(score.Guess) ? "*":" ")} {score.Guess} {score.AverageMatches:0.##}");
                 }
                 Console.WriteLine($"Guess: {guess}? -> {guess.ToFlagString(flags)}");
             }
