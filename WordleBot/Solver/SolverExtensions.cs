@@ -13,13 +13,13 @@ namespace WordleBot.Solver
         public static bool IsSolved(this Flags[] flags) => flags.All(f => f == Flags.Matched);
 
         // TODO: replace return tuple with named class
-        public static IEnumerable<(IList<GuessScore> Scores, string Guess, Flags[] Flags)> Solve(this IList<string> allWords, IList<string> candidates, Func<string, Flags[]> evaluator, bool useNonCandidates)
+        public static IEnumerable<(IList<GuessScore> Scores, string Guess, Flags[] Flags)> Solve(this IList<string> vocabulary, IList<string> candidates, Func<string, Flags[]> evaluator, bool guessCandidatesOnly)
         {
-            Validator.Validate(allWords, candidates);
+            Validator.Validate(vocabulary, candidates);
 
-            if (!allWords.TryLoad(out IList<GuessScore> scores))
+            if (!vocabulary.TryLoad(out IList<GuessScore> scores))
             {
-                scores = allWords.Rank(candidates);
+                scores = vocabulary.CalculateScores(candidates);
                 scores.Save();
             }
 
@@ -33,14 +33,14 @@ namespace WordleBot.Solver
 
                 candidates = candidates.Eliminate(guess, flags).ToList();
 
-                scores = useNonCandidates && candidates.Count > 1
-                    ? allWords.Rank(candidates)
-                    : candidates.Rank(candidates);
+                IList<string> nextGuesses = (guessCandidatesOnly || candidates.Count == 1) ? candidates : vocabulary;
+
+                scores = nextGuesses.CalculateScores(candidates);
             }
             while (!flags.IsSolved() && candidates.Any());
         }
 
-        private static IList<GuessScore> Rank(this IEnumerable<string> allWords, IList<string> candidates)
+        private static IList<GuessScore> CalculateScores(this IEnumerable<string> allWords, IList<string> candidates)
         {
             return allWords
                 .AsParallel()

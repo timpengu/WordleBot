@@ -1,4 +1,5 @@
 ﻿using System;
+using WordleBot.Dictionaries;
 
 namespace WordleBot.Wordle
 {
@@ -6,9 +7,9 @@ namespace WordleBot.Wordle
     {
         private static readonly DateTime WordleEpoch = new DateTime(2021, 6, 19);
 
-        public static int GetSolutionIndex(this DateTime date)
+        public static int GetWordleSolutionIndex(this DateTime date)
         {
-            return WordleEpoch.GetDateOffset(date) % Dictionary.Solutions.Length;
+            return WordleEpoch.GetDateOffset(date) % WordleDictionary.Solutions.Length;
         }
 
         private static int GetDateOffset(this DateTime epoch, DateTime date)

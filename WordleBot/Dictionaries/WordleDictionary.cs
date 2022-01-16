@@ -1,8 +1,8 @@
 ﻿using System.Linq;
 
-namespace WordleBot.Wordle
+namespace WordleBot.Dictionaries
 {
-    public static class Dictionary
+    public static class WordleDictionary
     {
         public static string[] AllWords => NonSolutions.Concat(Solutions).ToArray();
 
