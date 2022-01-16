@@ -44,14 +44,14 @@ namespace WordleBot
             sw.Start();
 
             var solutionsSet = new HashSet<string>(Solutions);
-            foreach (var (scores, guess, flags) in vocabulary.Solve(candidates, solution.GetEvaluator(), Options.GuessCandidatesOnly))
+            foreach (Move move in vocabulary.Solve(candidates, solution.GetEvaluator(), Options.GuessCandidatesOnly))
             {
                 Console.WriteLine($"\n[{sw.Elapsed:hh\\:mm\\:ss\\.fff}]");
-                foreach (GuessScore score in scores.Take(10))
+                foreach (Score score in move.Scores.Take(10))
                 {
                     Console.WriteLine($" {(solutionsSet.Contains(score.Guess) ? "*":" ")} {score.Guess} {score.AverageMatches:0.##}");
                 }
-                Console.WriteLine($"Guess: {guess}? -> {guess.ToFlagString(flags)}");
+                Console.WriteLine($"Guess: {move.Guess}? -> {move.Guess.ToFlagString(move.Flags)}");
             }
         }
 

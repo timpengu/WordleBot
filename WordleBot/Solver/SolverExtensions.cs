@@ -7,17 +7,17 @@ using WordleBot.Persistence;
 
 namespace WordleBot.Solver
 {
+
     public static class SolverExtensions
     {
         public static Func<string, Flags[]> GetEvaluator(this string solution) => guess => solution.EvaluateGuess(guess);
         public static bool IsSolved(this Flags[] flags) => flags.All(f => f == Flags.Matched);
 
-        // TODO: replace return tuple with named class
-        public static IEnumerable<(IList<GuessScore> Scores, string Guess, Flags[] Flags)> Solve(this IList<string> vocabulary, IList<string> candidates, Func<string, Flags[]> evaluator, bool guessCandidatesOnly)
+        public static IEnumerable<Move> Solve(this IList<string> vocabulary, IList<string> candidates, Func<string, Flags[]> evaluator, bool guessCandidatesOnly)
         {
             Validator.Validate(vocabulary, candidates);
 
-            if (!vocabulary.TryLoad(out IList<GuessScore> scores))
+            if (!vocabulary.TryLoad(out IList<Score> scores))
             {
                 scores = vocabulary.CalculateScores(candidates);
                 scores.Save();
@@ -29,7 +29,7 @@ namespace WordleBot.Solver
                 string guess = scores.MinBy(r => r.AverageMatches).SingleRandom().Guess;
                 flags = evaluator(guess);
 
-                yield return (scores, guess, flags);
+                yield return new Move(scores, guess, flags);
 
                 candidates = candidates.Eliminate(guess, flags).ToList();
 
@@ -40,11 +40,11 @@ namespace WordleBot.Solver
             while (!flags.IsSolved() && candidates.Any());
         }
 
-        private static IList<GuessScore> CalculateScores(this IEnumerable<string> allWords, IList<string> candidates)
+        private static IList<Score> CalculateScores(this IEnumerable<string> allWords, IList<string> candidates)
         {
             return allWords
                 .AsParallel()
-                .Select(guess => new GuessScore(guess, candidates.GetAverageMatches(guess)))
+                .Select(guess => new Score(guess, candidates.GetAverageMatches(guess)))
                 .OrderBy(g => g.AverageMatches)
                 .ToList();
         }

@@ -11,7 +11,7 @@ namespace WordleBot.Persistence
     {
         public static string ApplicationName = nameof(Wordle);
     
-        public static void Save(this IList<GuessScore> scores)
+        public static void Save(this IList<Score> scores)
         {
             int hash = scores.Select(c => c.Guess).GetStableHashCode();
             string json = JsonSerializer.Serialize(scores);
@@ -19,7 +19,7 @@ namespace WordleBot.Persistence
             File.WriteAllText(filePath, json);
         }
 
-        public static bool TryLoad(this IEnumerable<string> words, out IList<GuessScore> scores)
+        public static bool TryLoad(this IEnumerable<string> words, out IList<Score> scores)
         {
             int hash = words.GetStableHashCode();
             string filePath = GetStateFilePath(hash);
@@ -30,7 +30,7 @@ namespace WordleBot.Persistence
             }
 
             string json = File.ReadAllText(filePath);
-            var loadedScores = JsonSerializer.Deserialize<IList<GuessScore>>(json);
+            var loadedScores = JsonSerializer.Deserialize<IList<Score>>(json);
 
             if (!words.AreEqualTo(loadedScores.Select(c => c.Guess)))
             {

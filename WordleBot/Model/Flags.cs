@@ -3,7 +3,7 @@
     public enum Flags
     {
         NotMatched = 0, // grey
-        NotInPlace, // yellow
-        Matched,    // green
+        NotInPlace,     // yellow
+        Matched,        // green
     }
 }

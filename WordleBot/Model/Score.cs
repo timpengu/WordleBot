@@ -2,10 +2,10 @@
 
 namespace WordleBot.Model
 {
-    public struct GuessScore
+    public struct Score
     {
         [JsonConstructor]
-        public GuessScore(string guess, double averageMatches)
+        public Score(string guess, double averageMatches)
         {
             Guess = guess;
             AverageMatches = averageMatches;
