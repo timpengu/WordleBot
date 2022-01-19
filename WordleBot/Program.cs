@@ -22,7 +22,7 @@ namespace WordleBot
 
         public static void Main()
         {
-            Console.WriteLine("WORDLEbot v1.2");
+            Console.WriteLine("WORDLEbot v1.3");
 
             string solution;
             if (Options.UseRandomSolution)
@@ -49,7 +49,8 @@ namespace WordleBot
                 Console.WriteLine($"\n[{sw.Elapsed:hh\\:mm\\:ss\\.fff}]");
                 foreach (Score score in move.Scores.Take(10))
                 {
-                    Console.WriteLine($" {(solutionsSet.Contains(score.Guess) ? "*":" ")} {score.Guess} {score.AverageMatches:0.##}");
+                    bool isInSolutions = solutionsSet.Contains(score.Guess);
+                    Console.WriteLine($"  {score.Guess} {score.AverageMatches:0.##} {(score.IsCandidate ? "C" : "")}{(isInSolutions ? "S" : "")}");
                 }
                 Console.WriteLine($"Guess: {move.Guess}? -> {move.Guess.ToFlagString(move.Flags)}");
             }

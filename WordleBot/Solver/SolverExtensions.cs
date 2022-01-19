@@ -28,7 +28,7 @@ namespace WordleBot.Solver
             Flags[] flags;
             do
             {
-                string guess = scores.MinBy(r => r.AverageMatches).SingleRandom().Guess;
+                string guess = scores.MaxBy(s => s).SingleRandom().Guess;
                 flags = evaluator(guess);
 
                 yield return new Move(scores, guess, flags);
@@ -43,10 +43,11 @@ namespace WordleBot.Solver
 
         private static IReadOnlyList<Score> CalculateScores(this IEnumerable<string> allWords, IReadOnlyList<string> candidates)
         {
+            var candidateSet = new HashSet<string>(candidates); // TODO: fix ToHashSet reference or store candidates as an ISet<string>
             return allWords
                 .AsParallel() // TODO: benchmark whether to parallelise outer or inner loop
-                .Select(guess => new Score(guess, candidates.GetAverageMatches(guess)))
-                .OrderBy(g => g.AverageMatches)
+                .Select(guess => new Score(guess, candidateSet.Contains(guess), candidates.GetAverageMatches(guess)))
+                .OrderByDescending(s => s) // best scores first (lowest AverageMatches)
                 .ToList();
         }
 
