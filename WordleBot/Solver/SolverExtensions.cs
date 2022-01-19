@@ -17,6 +17,8 @@ namespace WordleBot.Solver
         {
             Validator.Validate(vocabulary, candidates);
 
+            // TODO: Calc initial scores only against solutions (quicker and OK to optimise/cheat first guess)?  Use entire vocabulary to calc scores thereafter.
+            // TODO: Otherwise need to add candidates to file hash to distinguish vocabulary modes
             if (!vocabulary.TryLoad(out IReadOnlyList<Score> scores))
             {
                 scores = vocabulary.CalculateScores(candidates);

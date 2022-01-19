@@ -2,8 +2,9 @@
 {
     public record Options
     {
-        public bool UseRandomSolution { get; set; }
         public VocabularyMode VocabularyMode { get; set; }
+        public int VocabularySize { get; set; }
+        public bool UseRandomSolution { get; set; }
         public bool GuessCandidatesOnly { get; set; }
     };
 }

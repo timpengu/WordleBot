@@ -9,7 +9,7 @@ namespace WordleBot.Wordle
 
         public static int GetWordleSolutionIndex(this DateTime date)
         {
-            return WordleEpoch.GetDateOffset(date) % WordleDictionary.Solutions.Length;
+            return WordleEpoch.GetDateOffset(date) % WordleDictionary.Solutions.Count;
         }
 
         private static int GetDateOffset(this DateTime epoch, DateTime date)
