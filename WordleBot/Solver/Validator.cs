@@ -7,7 +7,7 @@ namespace WordleBot.Solver
 {
     public static class Validator
     {
-        public static void Validate(IList<string> allWords, IList<string> candidates)
+        public static void Validate(IReadOnlyCollection<string> allWords, IReadOnlyCollection<string> candidates)
         {
             int expectedLength = allWords.First().Length;
             string unexpectedLengthWord = allWords.FirstOrDefault(w => w.Length != expectedLength);

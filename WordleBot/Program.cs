@@ -19,7 +19,7 @@ namespace WordleBot
             GuessCandidatesOnly = false
         };
 
-        private static readonly IList<string> Solutions = WordleDictionary.Solutions.Normalise().ToList();
+        private static readonly IReadOnlyList<string> Solutions = WordleDictionary.Solutions.Normalise().ToList();
 
         public static void Main()
         {
@@ -38,7 +38,7 @@ namespace WordleBot
                 Console.WriteLine($"Seeking solution to Wordle #{index}");
             }
 
-            (IList<string> vocabulary, IList<string> candidates) = GetVocabulary(Options.VocabularyMode, 8000);
+            (IReadOnlyList<string> vocabulary, IReadOnlyList<string> candidates) = GetVocabulary(Options.VocabularyMode, 8000);
 
             var sw = new Stopwatch();
             sw.Start();
@@ -55,9 +55,9 @@ namespace WordleBot
             }
         }
 
-        private static (IList<string> vocabulary, IList<string> candidates) GetVocabulary(this VocabularyMode mode, int maxNonSolutions)
+        private static (IReadOnlyList<string> vocabulary, IReadOnlyList<string> candidates) GetVocabulary(this VocabularyMode mode, int maxNonSolutions)
         {
-            var allWords = new Lazy<IList<string>>(() =>
+            var allWords = new Lazy<IReadOnlyList<string>>(() =>
             {
                 IEnumerable<string> wordleWords = WordleDictionary.AllWords.Normalise();
                 IEnumerable<string> freqWords = GoogleBooksDictionary.AllWords.Normalise().Take(maxNonSolutions);

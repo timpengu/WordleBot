@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using MoreLinq;
 using WordleBot.Model;
@@ -7,17 +8,16 @@ using WordleBot.Persistence;
 
 namespace WordleBot.Solver
 {
-
     public static class SolverExtensions
     {
         public static Func<string, Flags[]> GetEvaluator(this string solution) => guess => solution.EvaluateGuess(guess);
         public static bool IsSolved(this Flags[] flags) => flags.All(f => f == Flags.Matched);
 
-        public static IEnumerable<Move> Solve(this IList<string> vocabulary, IList<string> candidates, Func<string, Flags[]> evaluator, bool guessCandidatesOnly)
+        public static IEnumerable<Move> Solve(this IReadOnlyList<string> vocabulary, IReadOnlyList<string> candidates, Func<string, Flags[]> evaluator, bool guessCandidatesOnly)
         {
             Validator.Validate(vocabulary, candidates);
 
-            if (!vocabulary.TryLoad(out IList<Score> scores))
+            if (!vocabulary.TryLoad(out IReadOnlyList<Score> scores))
             {
                 scores = vocabulary.CalculateScores(candidates);
                 scores.Save();
@@ -33,31 +33,31 @@ namespace WordleBot.Solver
 
                 candidates = candidates.Eliminate(guess, flags).ToList();
 
-                IList<string> nextGuesses = (guessCandidatesOnly || candidates.Count == 1) ? candidates : vocabulary;
-
+                IReadOnlyList<string> nextGuesses = (guessCandidatesOnly || candidates.Count == 1) ? candidates : vocabulary;
                 scores = nextGuesses.CalculateScores(candidates);
             }
             while (!flags.IsSolved() && candidates.Any());
         }
 
-        private static IList<Score> CalculateScores(this IEnumerable<string> allWords, IList<string> candidates)
+        private static IReadOnlyList<Score> CalculateScores(this IEnumerable<string> allWords, IReadOnlyList<string> candidates)
         {
             return allWords
-                .AsParallel()
+                .AsParallel() // TODO: benchmark whether to parallelise outer or inner loop
                 .Select(guess => new Score(guess, candidates.GetAverageMatches(guess)))
                 .OrderBy(g => g.AverageMatches)
                 .ToList();
         }
 
-        private static double GetAverageMatches(this IList<string> candidates, string guess)
+        private static double GetAverageMatches(this IReadOnlyList<string> candidates, string guess)
         {
             // calculate the average number of remaining candidates given this guess
             return candidates
                 .Select(candidate =>
                 {
                     // supposing this candidate is the solution, find the number of candidates remaining after this guess
-                    Flags[] flags = candidate.EvaluateGuess(guess);
-                    return (double)candidates.Eliminate(guess, flags).Count();
+                    Span<Flags> flags = stackalloc Flags[guess.Length];
+                    candidate.EvaluateGuess(guess, flags);
+                    return (double) candidates.CountMatches(guess, flags);
                 })
                 .Average();
         }
@@ -67,18 +67,26 @@ namespace WordleBot.Solver
             return candidates.Where(candidate => candidate.IsMatch(guess, flags));
         }
 
-        // TODO: optimise this for inner loop
-        private static bool IsMatch(this string candidate, string guess, Flags[] flags)
+        private static int CountMatches(this IEnumerable<string> candidates, string guess, ReadOnlySpan<Flags> flags)
         {
-            if (flags.Length != guess.Length)
-            {
-                throw new ArgumentException("Flags length must match guess length");
-            }
+            // CS1628: Cannot use ref parameter 'flags' inside a lambda expression
+            // return candidates.Count(candidate => candidate.IsMatch(guess, flags));
 
-            if (guess.Length != candidate.Length)
+            int count = 0;
+            foreach(var candidate in candidates)
             {
-                throw new InvalidOperationException("Guess length must match candidate length");
+                if (candidate.IsMatch(guess, flags))
+                {
+                    ++count;
+                }
             }
+            return count;
+        }
+
+        private static bool IsMatch(this string candidate, string guess, ReadOnlySpan<Flags> flags)
+        {
+            candidate.ValidateArgument(guess);
+            candidate.ValidateArgument(flags);
 
             // Validate matched characters
             var unmatchedChars = new SpanBag<char>(stackalloc char[guess.Length]);
@@ -125,15 +133,18 @@ namespace WordleBot.Solver
             return true;
         }
 
-        // TODO: optimise, return Span<Flags> ?
         private static Flags[] EvaluateGuess(this string solution, string guess)
         {
-            if (guess.Length != solution.Length)
-            {
-                throw new InvalidOperationException("Guess length must match solution length");
-            }
+            var flags = new Flags[guess.Length];
+            solution.EvaluateGuess(guess, flags);
+            return flags;
+        }
 
-            var flags = new Flags[guess.Length]; // all Flags.NotPresent
+        private static void EvaluateGuess(this string solution, string guess, Span<Flags> flags)
+        {
+            solution.ValidateArgument(guess);
+            solution.ValidateArgument(flags);
+
             var unmatchedChars = new SpanBag<char>(stackalloc char[guess.Length]);
 
             // Identify matched characters
@@ -145,6 +156,7 @@ namespace WordleBot.Solver
                 }
                 else
                 {
+                    flags[i] = Flags.NotMatched;
                     unmatchedChars.Add(solution[i]);
                 }
             }
@@ -160,8 +172,24 @@ namespace WordleBot.Solver
                     }
                 }
             }
+        }
 
-            return flags;
+        [Conditional("DEBUG")]
+        private static void ValidateArgument(this string expected, string guess)
+        {
+            if (guess.Length != expected.Length)
+            {
+                throw new ArgumentException($"Guess length ({guess.Length}) must match expected length ({expected.Length})");
+            }
+        }
+
+        [Conditional("DEBUG")]
+        private static void ValidateArgument(this string expected, ReadOnlySpan<Flags> flags)
+        {
+            if (flags.Length != expected.Length)
+            {
+                throw new ArgumentException($"Flags length ({flags.Length}) must match expected length ({expected.Length})");
+            }
         }
     }
 }
