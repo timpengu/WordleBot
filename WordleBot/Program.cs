@@ -14,7 +14,6 @@ namespace WordleBot
         // TODO: add args switch for behaviours
         private static readonly Options Options = new()
         {
-            VocabularyMode = VocabularyMode.UseAllWords,
             VocabularySize = 5000,
             UseRandomSolution = false,
             GuessCandidatesOnly = false
@@ -37,46 +36,39 @@ namespace WordleBot
                 Console.WriteLine($"Seeking solution to Wordle #{index}");
             }
 
-            (IReadOnlyList<string> vocabulary, IReadOnlyList<string> candidates) = GetVocabulary(Options.VocabularyMode, Options.VocabularySize);
-            Console.WriteLine($"Using vocabulary size {vocabulary.Count}/{candidates.Count}");
+            IReadOnlyCollection<string> vocabulary = GetVocabulary(Options.VocabularySize);
+            IReadOnlySet<string> solutions = WordleDictionary.Solutions.ToHashSet();
+
+            Console.WriteLine($"Using vocabulary size {vocabulary.Count}/{solutions.Count}");
 
             var sw = new Stopwatch();
             sw.Start();
 
-            var solutionsSet = new HashSet<string>(WordleDictionary.Solutions);
-            foreach (Move move in vocabulary.Solve(candidates, solution.GetEvaluator(), Options.GuessCandidatesOnly))
+            foreach (Move move in vocabulary.Solve(solution.GetEvaluator(), Options.GuessCandidatesOnly))
             {
                 Console.WriteLine($"\n[{sw.Elapsed:hh\\:mm\\:ss\\.fff}]");
                 foreach (Score score in move.Scores.Take(10))
                 {
-                    bool isInSolutions = solutionsSet.Contains(score.Guess);
-                    Console.WriteLine($"  {score.Guess} {score.AverageMatches:0.##} {(score.IsCandidate ? "C" : "")}{(isInSolutions ? "S" : "")}");
+                    bool isInSolutions = solutions.Contains(score.Guess);
+                    Console.WriteLine($"  {(isInSolutions ? "*" : " ")} {score.Guess} {score.AverageMatches:0.##} {(score.IsCandidate ? "C" : "")}");
                 }
                 Console.WriteLine($"Guess: {move.Guess}? -> {move.Guess.ToFlagString(move.Flags)}");
             }
         }
 
-        private static (IReadOnlyList<string> vocabulary, IReadOnlyList<string> candidates) GetVocabulary(this VocabularyMode mode, int maxVocabularySize = -1)
+        private static IReadOnlyList<string> GetVocabulary(int vocabularySize = int.MaxValue)
         {
-            var fullVocabulary = new Lazy<IReadOnlyList<string>>(() =>
+            if (vocabularySize == int.MaxValue)
             {
-                var words = maxVocabularySize < 0
-                    ? WordleDictionary.AllWords
-                    : GoogleBooksDictionary.AllWords // in descending frequency order
-                        .Intersect(WordleDictionary.NonSolutions)
-                        .Take(maxVocabularySize - WordleDictionary.Solutions.Count) // use N most frequent words only
-                        .Union(WordleDictionary.Solutions); // ensure all valid solutions are included
+                return WordleDictionary.AllWords;
+            }
 
-                return words.ToList();
-            });
-
-            return mode switch
-            {
-                VocabularyMode.UseSolutionsOnly => (WordleDictionary.Solutions, WordleDictionary.Solutions),
-                VocabularyMode.UseSolutionsToCalculateScores => (fullVocabulary.Value, WordleDictionary.Solutions),
-                VocabularyMode.UseAllWords => (fullVocabulary.Value, fullVocabulary.Value),
-                _ => throw new NotSupportedException()
-            };
+            int maxNonSolutions = vocabularySize - WordleDictionary.Solutions.Count;
+            return GoogleBooksDictionary.AllWords // in descending frequency order
+                .Intersect(WordleDictionary.NonSolutions)
+                .Take(maxNonSolutions) // take N most frequent words
+                .Union(WordleDictionary.Solutions) // ensure all valid solutions are included
+                .ToList();
         }
     }
 }

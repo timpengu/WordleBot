@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using MoreLinq;
 using WordleBot.Model;
@@ -13,13 +12,13 @@ namespace WordleBot.Solver
         public static Func<string, Flags[]> GetEvaluator(this string solution) => guess => solution.EvaluateGuess(guess);
         public static bool IsSolved(this Flags[] flags) => flags.All(f => f == Flags.Matched);
 
-        public static IEnumerable<Move> Solve(this IReadOnlyList<string> vocabulary, IReadOnlyList<string> candidates, Func<string, Flags[]> evaluator, bool guessCandidatesOnly)
+        public static IEnumerable<Move> Solve(this IReadOnlyCollection<string> vocabulary, Func<string, Flags[]> evaluator, bool guessCandidatesOnly)
         {
-            Validator.Validate(vocabulary, candidates);
+            vocabulary.Validate();
 
-            // TODO: Calc initial scores only against solutions (quicker and OK to optimise/cheat first guess)?  Use entire vocabulary to calc scores thereafter.
-            // TODO: Otherwise need to add candidates to file hash to distinguish vocabulary modes
-            if (!vocabulary.TryLoad(out IReadOnlyList<Score> scores))
+            IReadOnlySet<string> candidates = vocabulary.ToHashSet();
+
+            if (!vocabulary.TryLoad(out IReadOnlyCollection<Score> scores))
             {
                 scores = vocabulary.CalculateScores(candidates);
                 scores.Save();
@@ -33,25 +32,24 @@ namespace WordleBot.Solver
 
                 yield return new Move(scores, guess, flags);
 
-                candidates = candidates.Eliminate(guess, flags).ToList();
+                candidates = candidates.Eliminate(guess, flags).ToHashSet();
 
-                IReadOnlyList<string> nextGuesses = (guessCandidatesOnly || candidates.Count == 1) ? candidates : vocabulary;
+                IReadOnlyCollection<string> nextGuesses = (guessCandidatesOnly || candidates.Count == 1) ? candidates : vocabulary;
                 scores = nextGuesses.CalculateScores(candidates);
             }
             while (!flags.IsSolved() && candidates.Any());
         }
 
-        private static IReadOnlyList<Score> CalculateScores(this IEnumerable<string> allWords, IReadOnlyList<string> candidates)
+        private static IReadOnlyList<Score> CalculateScores(this IEnumerable<string> guesses, IReadOnlySet<string> candidates)
         {
-            var candidateSet = new HashSet<string>(candidates); // TODO: fix ToHashSet reference or store candidates as an ISet<string>
-            return allWords
+            return guesses
                 .AsParallel() // TODO: benchmark whether to parallelise outer or inner loop
-                .Select(guess => new Score(guess, candidateSet.Contains(guess), candidates.GetAverageMatches(guess)))
+                .Select(guess => new Score(guess, candidates.Contains(guess), candidates.GetAverageMatches(guess)))
                 .OrderByDescending(s => s) // best scores first (lowest AverageMatches)
                 .ToList();
         }
 
-        private static double GetAverageMatches(this IReadOnlyList<string> candidates, string guess)
+        private static double GetAverageMatches(this IReadOnlyCollection<string> candidates, string guess)
         {
             // calculate the average number of remaining candidates given this guess
             return candidates
@@ -177,22 +175,7 @@ namespace WordleBot.Solver
             }
         }
 
-        [Conditional("DEBUG")]
-        private static void ValidateArgument(this string expected, string guess)
-        {
-            if (guess.Length != expected.Length)
-            {
-                throw new ArgumentException($"Guess length ({guess.Length}) must match expected length ({expected.Length})");
-            }
-        }
-
-        [Conditional("DEBUG")]
-        private static void ValidateArgument(this string expected, ReadOnlySpan<Flags> flags)
-        {
-            if (flags.Length != expected.Length)
-            {
-                throw new ArgumentException($"Flags length ({flags.Length}) must match expected length ({expected.Length})");
-            }
-        }
+        // HACK: resolve ambiguous calls to Enumerable.ToHashSet / MoreEnumerable.ToHashSet
+        private static HashSet<T> ToHashSet<T>(this IEnumerable<T> source) => Enumerable.ToHashSet(source);
     }
 }

@@ -11,7 +11,7 @@ namespace WordleBot.Persistence
     {
         public static string ApplicationName = nameof(Wordle);
     
-        public static void Save(this IReadOnlyList<Score> scores)
+        public static void Save(this IReadOnlyCollection<Score> scores)
         {
             int hash = scores.Select(c => c.Guess).GetStableHashCode();
             string json = JsonSerializer.Serialize(scores);
@@ -19,7 +19,7 @@ namespace WordleBot.Persistence
             File.WriteAllText(filePath, json);
         }
 
-        public static bool TryLoad(this IEnumerable<string> words, out IReadOnlyList<Score> scores)
+        public static bool TryLoad(this IEnumerable<string> words, out IReadOnlyCollection<Score> scores)
         {
             int hash = words.GetStableHashCode();
             string filePath = GetStateFilePath(hash);
@@ -42,7 +42,7 @@ namespace WordleBot.Persistence
             return true;
         }
 
-        public static string GetStateFilePath(int hash) => GetDataFilePath($"State.{hash:X8}.json");
+        private static string GetStateFilePath(int hash) => GetDataFilePath($"State.{hash:X8}.json");
         private static string GetDataFilePath(string filename) => Path.Combine(GetDataFolderPath(), filename);
         private static string GetDataFolderPath()
         {
