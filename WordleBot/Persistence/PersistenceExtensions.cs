@@ -11,38 +11,40 @@ namespace WordleBot.Persistence
     {
         public static string ApplicationName = nameof(Wordle);
     
-        public static void Save(this IReadOnlyCollection<Score> scores)
+        public static void Save(this IReadOnlyCollection<Score> scores, TimeSpan computeTime)
         {
-            int hash = scores.Select(c => c.Guess).GetStableHashCode();
-            string json = JsonSerializer.Serialize(scores);
-            string filePath = GetStateFilePath(hash);
-            File.WriteAllText(filePath, json);
+            var file = new ScoresFile(scores.Count, computeTime, scores);
+            string path = GetScoresFilePath(scores.Select(c => c.Guess).GetStableHashCode());
+
+            // TODO: serialise to file stream, improve file format?
+            string json = JsonSerializer.Serialize(file);
+            File.WriteAllText(path, json);
         }
 
-        public static bool TryLoad(this IEnumerable<string> words, out IReadOnlyCollection<Score> scores)
+        public static bool TryLoad(this IReadOnlyCollection<string> vocabulary, out IReadOnlyCollection<Score> scores)
         {
-            int hash = words.GetStableHashCode();
-            string filePath = GetStateFilePath(hash);
-            if (!File.Exists(filePath))
+            string path = GetScoresFilePath(vocabulary.GetStableHashCode());
+            if (!File.Exists(path))
             {
                 scores = null;
                 return false;
             }
 
-            string json = File.ReadAllText(filePath);
-            var loadedScores = JsonSerializer.Deserialize<List<Score>>(json);
+            // TODO: deserialise from file stream
+            string json = File.ReadAllText(path);
+            var file = JsonSerializer.Deserialize<ScoresFile>(json);
 
-            if (!words.AreEqualTo(loadedScores.Select(c => c.Guess)))
+            if (!vocabulary.AreEqualTo(file.Scores.Select(c => c.Guess)))
             {
                 scores = null;
                 return false;
             }
 
-            scores = loadedScores;
+            scores = file.Scores;
             return true;
         }
 
-        private static string GetStateFilePath(int hash) => GetDataFilePath($"State.{hash:X8}.json");
+        private static string GetScoresFilePath(int hash) => GetDataFilePath($"Scores.{hash:X8}.json");
         private static string GetDataFilePath(string filename) => Path.Combine(GetDataFolderPath(), filename);
         private static string GetDataFolderPath()
         {

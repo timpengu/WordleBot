@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using MoreLinq;
 using WordleBot.Model;
@@ -20,8 +21,9 @@ namespace WordleBot.Solver
 
             if (!vocabulary.TryLoad(out IReadOnlyCollection<Score> scores))
             {
+                var sw = Stopwatch.StartNew();
                 scores = vocabulary.CalculateScores(candidates);
-                scores.Save();
+                scores.Save(sw.Elapsed);
             }
 
             Flags[] flags;

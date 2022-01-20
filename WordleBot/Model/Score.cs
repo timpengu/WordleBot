@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace WordleBot.Model
@@ -17,7 +16,7 @@ namespace WordleBot.Model
         [JsonInclude]
         public string Guess { get; }
 
-        [JsonInclude]
+        [JsonIgnore]
         public bool IsCandidate { get; }
 
         [JsonInclude]

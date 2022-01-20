@@ -41,8 +41,7 @@ namespace WordleBot
 
             Console.WriteLine($"Using vocabulary size {vocabulary.Count}/{solutions.Count}");
 
-            var sw = new Stopwatch();
-            sw.Start();
+            var sw = Stopwatch.StartNew();
 
             foreach (Move move in vocabulary.Solve(solution.GetEvaluator(), Options.GuessCandidatesOnly))
             {
