@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using WordleBot.Model;
 
@@ -9,7 +10,7 @@ namespace WordleBot.Persistence
 {
     public static class PersistenceExtensions
     {
-        public static string ApplicationName = nameof(Wordle);
+        public static string ApplicationName = Assembly.GetExecutingAssembly().GetName().Name;
     
         public static void Save(this IReadOnlyCollection<Score> scores, TimeSpan computeTime)
         {
