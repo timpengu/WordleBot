@@ -10,6 +10,7 @@ namespace WordleBot.Dictionaries
     /// </summary>
     public class WordleDictionary : IGameDictionary
     {
+        public string Name => "Wordle";
         public int GetSolutionIndex(DateTime date) => Solutions.GetSolutionIndex(date, SolutionEpoch);
         public IReadOnlyList<string> AllWords => _allWordsList.Value;
         public IReadOnlyList<string> Solutions => _solutionsList.Value;

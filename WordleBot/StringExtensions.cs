@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using WordleBot.Model;
+using WordleBot.Solver;
 
 namespace WordleBot
 {
@@ -8,10 +9,7 @@ namespace WordleBot
     {
         public static string ToFlagString(this string guess, Flags[] flags)
         {
-            if (flags.Length != guess.Length)
-            {
-                throw new ArgumentException("Flags length must match guess length");
-            }
+            guess.ValidateArgument(flags);
 
             var sb = new StringBuilder();
             for (int i = 0; i < guess.Length; ++i)

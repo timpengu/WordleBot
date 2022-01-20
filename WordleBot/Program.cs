@@ -10,14 +10,18 @@ namespace WordleBot
 {
     public static class Program
     {
-        private static readonly IGameDictionary GameDictionary = new WordleDictionary();
+        private static readonly IGameDictionary GameDictionary = new WorgleDictionary();
 
         // TODO: add args switch for behaviours
-        private static readonly Options Options = new()
+        private static readonly Options Options = new Options
         {
-            VocabularySize = 5000, // Use 0 for solutions only, int.MaxValue for all words
-            UseRandomSolution = false,
-            GuessCandidatesOnly = false
+            // VocabularySize = 0,              // solutions only (lowkey cheating)
+            // VocabularySize = 5000,           // a more realistic vocabulary
+            // VocabularySize = int.MaxValue,   // use the entire word list (many of which may be outside typical human vocabularies)
+            VocabularySize = 5000,
+
+            UseRandomSolution = false,          // select a random solution instead of today's answer for testing
+            GuessCandidatesOnly = false         // only guess words matching previous results, aka "hard mode"
         };
 
         public static void Main()
@@ -34,10 +38,10 @@ namespace WordleBot
             {
                 int index = GameDictionary.GetSolutionIndex(DateTime.Now.Date);
                 solution = GameDictionary.Solutions[index];
-                Console.WriteLine($"Seeking solution to Wordle #{index}");
+                Console.WriteLine($"Seeking solution to {GameDictionary.Name} #{index}");
             }
 
-            IReadOnlyCollection<string> vocabulary = GetVocabulary(Options.VocabularySize);
+            IReadOnlyCollection<string> vocabulary = GameDictionary.GetVocabulary(Options.VocabularySize);
             IReadOnlySet<string> solutions = GameDictionary.Solutions.ToHashSet();
 
             Console.WriteLine($"Using vocabulary size {vocabulary.Count}/{solutions.Count}");
@@ -50,25 +54,10 @@ namespace WordleBot
                 foreach (Score score in move.Scores.Take(10))
                 {
                     bool isInSolutions = solutions.Contains(score.Guess);
-                    Console.WriteLine($"  {(isInSolutions ? "*" : " ")} {score.Guess} {score.AverageMatches:0.##} {(score.IsCandidate ? "C" : "")}");
+                    Console.WriteLine($"  {(isInSolutions ? "*" : " ")} {score.Guess} {score.AverageMatches:0.##} {(score.IsCandidate ? "c" : "")}");
                 }
                 Console.WriteLine($"Guess: {move.Guess}? -> {move.Guess.ToFlagString(move.Flags)}");
             }
-        }
-
-        private static IReadOnlyList<string> GetVocabulary(int vocabularySize = int.MaxValue)
-        {
-            if (vocabularySize == int.MaxValue)
-            {
-                return GameDictionary.AllWords;
-            }
-
-            int maxNonSolutions = vocabularySize - GameDictionary.Solutions.Count;
-            return GameDictionary.WordsByDescFrequency
-                .Intersect(GameDictionary.NonSolutions)
-                .Take(maxNonSolutions) // take N most frequent words from non-solutions
-                .Union(GameDictionary.Solutions) // ensure all valid solutions are included
-                .ToList();
         }
     }
 }

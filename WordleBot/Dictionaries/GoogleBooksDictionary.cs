@@ -5,9 +5,13 @@ using System.Linq;
 namespace WordleBot.Dictionaries
 {
     /// <summary>
-    /// Google Books five-letter words in descending frequency order
+    /// Google Books words by length in descending frequency order
     /// http://norvig.com/google-books-common-words.txt
     /// </summary>
+    /// <remarks>
+    /// # Extract csv of 5-letter words e.g.
+    /// awk '/^[A-Z]{5}\s/ { printf "\"%s\",", $1 }' google-books-common-words.txt
+    /// </remarks>
     class GoogleBooksDictionary
     {
         public static IReadOnlyList<string> GetWordsOfLength(int length) =>
