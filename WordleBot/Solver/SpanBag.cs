@@ -3,6 +3,10 @@ using System.Linq;
 
 namespace WordleBot.Solver
 {
+    /// <summary>
+    /// Implements an unordered bag using a Span for optimisation
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public ref struct SpanBag<T> where T : IEquatable<T>
     {
         public SpanBag(Span<T> span)
@@ -32,11 +36,7 @@ namespace WordleBot.Solver
                 return false;
             }
 
-            for (--Count; pos < Count; ++pos)
-            {
-                Span[pos] = Span[pos + 1];
-            }
-
+            Span[pos] = Span[--Count];
             return true;
         }
     }
