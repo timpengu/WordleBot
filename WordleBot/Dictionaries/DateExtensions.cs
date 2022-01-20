@@ -1,18 +1,16 @@
 ﻿using System;
-using WordleBot.Dictionaries;
+using System.Collections.Generic;
 
-namespace WordleBot.Wordle
+namespace WordleBot.Dictionaries
 {
     public static class DateExtensions
     {
-        private static readonly DateTime WordleEpoch = new DateTime(2021, 6, 19);
-
-        public static int GetWordleSolutionIndex(this DateTime date)
+        public static int GetSolutionIndex(this IReadOnlyCollection<string> solutions, DateTime date, DateTime epoch)
         {
-            return WordleEpoch.GetDateOffset(date) % WordleDictionary.Solutions.Count;
+            return date.GetDateOffset(epoch) % solutions.Count;
         }
 
-        private static int GetDateOffset(this DateTime epoch, DateTime date)
+        private static int GetDateOffset(this DateTime date, DateTime epoch)
         {
             TimeSpan offset = date.Date - epoch.Date;
             return (int)Math.Floor(offset.TotalDays);

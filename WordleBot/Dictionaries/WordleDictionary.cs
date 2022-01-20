@@ -4,11 +4,19 @@ using System.Linq;
 
 namespace WordleBot.Dictionaries
 {
-    public static class WordleDictionary
+    /// <summary>
+    /// Wordle five-letter words
+    /// https://www.powerlanguage.co.uk/wordle/
+    /// </summary>
+    public class WordleDictionary : IGameDictionary
     {
-        public static IReadOnlyList<string> AllWords => _allWordsList.Value;
-        public static IReadOnlyList<string> Solutions => _solutionsList.Value;
-        public static IReadOnlyList<string> NonSolutions => _nonSolutionsList.Value;
+        public int GetSolutionIndex(DateTime date) => Solutions.GetSolutionIndex(date, SolutionEpoch);
+        public IReadOnlyList<string> AllWords => _allWordsList.Value;
+        public IReadOnlyList<string> Solutions => _solutionsList.Value;
+        public IReadOnlyList<string> NonSolutions => _nonSolutionsList.Value;
+        public IReadOnlyList<string> WordsByDescFrequency => GoogleBooksDictionary.GetWordsOfLength(5);
+
+        private static readonly DateTime SolutionEpoch = new DateTime(2021, 6, 19);
 
         private static Lazy<IReadOnlyList<string>> _allWordsList = new(() => _nonSolutions.Concat(_solutions).Normalise().OrderBy(s => s, StringComparer.InvariantCulture).ToList());
         private static Lazy<IReadOnlyList<string>> _solutionsList = new(() => _solutions.Normalise().ToList());

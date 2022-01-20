@@ -5,16 +5,17 @@ using System.Linq;
 using WordleBot.Dictionaries;
 using WordleBot.Model;
 using WordleBot.Solver;
-using WordleBot.Wordle;
 
 namespace WordleBot
 {
     public static class Program
     {
+        private static readonly IGameDictionary GameDictionary = new WordleDictionary();
+
         // TODO: add args switch for behaviours
         private static readonly Options Options = new()
         {
-            VocabularySize = 5000,
+            VocabularySize = 5000, // Use 0 for solutions only, int.MaxValue for all words
             UseRandomSolution = false,
             GuessCandidatesOnly = false
         };
@@ -26,18 +27,18 @@ namespace WordleBot
             string solution;
             if (Options.UseRandomSolution)
             {
-                solution = WordleDictionary.Solutions.SingleRandom();
+                solution = GameDictionary.Solutions.SingleRandom();
                 Console.WriteLine($"Seeking random solution: {solution}");
             }
             else
             {
-                int index = DateTime.Now.GetWordleSolutionIndex();
-                solution = WordleDictionary.Solutions[index];
+                int index = GameDictionary.GetSolutionIndex(DateTime.Now.Date);
+                solution = GameDictionary.Solutions[index];
                 Console.WriteLine($"Seeking solution to Wordle #{index}");
             }
 
             IReadOnlyCollection<string> vocabulary = GetVocabulary(Options.VocabularySize);
-            IReadOnlySet<string> solutions = WordleDictionary.Solutions.ToHashSet();
+            IReadOnlySet<string> solutions = GameDictionary.Solutions.ToHashSet();
 
             Console.WriteLine($"Using vocabulary size {vocabulary.Count}/{solutions.Count}");
 
@@ -59,14 +60,14 @@ namespace WordleBot
         {
             if (vocabularySize == int.MaxValue)
             {
-                return WordleDictionary.AllWords;
+                return GameDictionary.AllWords;
             }
 
-            int maxNonSolutions = vocabularySize - WordleDictionary.Solutions.Count;
-            return GoogleBooksDictionary.AllWords // in descending frequency order
-                .Intersect(WordleDictionary.NonSolutions)
-                .Take(maxNonSolutions) // take N most frequent words
-                .Union(WordleDictionary.Solutions) // ensure all valid solutions are included
+            int maxNonSolutions = vocabularySize - GameDictionary.Solutions.Count;
+            return GameDictionary.WordsByDescFrequency
+                .Intersect(GameDictionary.NonSolutions)
+                .Take(maxNonSolutions) // take N most frequent words from non-solutions
+                .Union(GameDictionary.Solutions) // ensure all valid solutions are included
                 .ToList();
         }
     }
