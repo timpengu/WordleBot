@@ -9,7 +9,7 @@ namespace WordleBot.Dictionaries
     /// http://norvig.com/google-books-common-words.txt
     /// </summary>
     /// <remarks>
-    /// # Extract csv of 5-letter words e.g.
+    /// # e.g. extract csv of 5-letter words:
     /// awk '/^[A-Z]{5}\s/ { printf "\"%s\",", $1 }' google-books-common-words.txt
     /// </remarks>
     class GoogleBooksDictionary
