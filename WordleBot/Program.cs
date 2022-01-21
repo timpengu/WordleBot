@@ -10,54 +10,60 @@ namespace WordleBot
 {
     public static class Program
     {
-        private static readonly IGameDictionary GameDictionary = new WorgleDictionary();
-
-        // TODO: add args switch for behaviours
-        private static readonly Options Options = new Options
+        private static readonly IGameDictionary[] GameDictionaries =
         {
-            // VocabularySize = 0,              // solutions only (lowkey cheating)
-            // VocabularySize = 5000,           // a more realistic vocabulary
-            // VocabularySize = int.MaxValue,   // use the entire word list (many of which may be outside typical human vocabularies)
-            VocabularySize = 5000,
-
-            UseRandomSolution = false,          // select a random solution instead of today's answer for testing
-            GuessCandidatesOnly = false         // only guess words matching previous results, aka "hard mode"
+            new WordleDictionary(),
+            new WorgleDictionary()
         };
 
-        public static void Main()
+        public static int Main(string[] args)
         {
             Console.WriteLine("WORDLEbot v1.3");
 
-            string solution;
-            if (Options.UseRandomSolution)
+            try
             {
-                solution = GameDictionary.Solutions.SingleRandom();
-                Console.WriteLine($"Seeking random solution: {solution}");
-            }
-            else
-            {
-                int index = GameDictionary.GetSolutionIndex(DateTime.Now.Date);
-                solution = GameDictionary.Solutions[index];
-                Console.WriteLine($"Seeking solution to {GameDictionary.Name} #{index}");
-            }
+                Options options = Options.Parse(args);
 
-            IReadOnlyCollection<string> vocabulary = GameDictionary.GetVocabulary(Options.VocabularySize);
-            IReadOnlySet<string> solutions = GameDictionary.Solutions.ToHashSet();
+                IGameDictionary gameDictionary = GameDictionaries.GetNamedDictionary(options.DictionaryName);
 
-            Console.WriteLine($"Using vocabulary size {vocabulary.Count}/{solutions.Count}");
-
-            var sw = Stopwatch.StartNew();
-
-            foreach (Move move in vocabulary.Solve(solution.GetEvaluator(), Options.GuessCandidatesOnly))
-            {
-                Console.WriteLine($"\n[{sw.Elapsed:hh\\:mm\\:ss\\.fff}]");
-                foreach (Score score in move.Scores.Take(10))
+                string solution;
+                if (options.UseRandomSolution)
                 {
-                    bool isInSolutions = solutions.Contains(score.Guess);
-                    Console.WriteLine($"  {(isInSolutions ? "*" : " ")} {score.Guess} {score.AverageMatches:0.##} {(score.IsCandidate ? "c" : "")}");
+                    solution = gameDictionary.Solutions.SingleRandom();
+                    Console.WriteLine($"Seeking random solution: {solution}");
                 }
-                Console.WriteLine($"Guess: {move.Guess}? -> {move.Guess.ToFlagString(move.Flags)}");
+                else
+                {
+                    int index = gameDictionary.GetSolutionIndex(DateTime.Now.Date);
+                    solution = gameDictionary.Solutions[index];
+                    Console.WriteLine($"Seeking solution for {gameDictionary.Name} #{index}");
+                }
+
+                IReadOnlyCollection<string> vocabulary = gameDictionary.GetVocabulary(options.VocabularySize);
+                IReadOnlySet<string> solutions = gameDictionary.Solutions.ToHashSet();
+
+                Console.WriteLine($"Using vocabulary size {vocabulary.Count} with {solutions.Count} solutions");
+
+                var sw = Stopwatch.StartNew();
+
+                foreach (Move move in vocabulary.Solve(solution.GetEvaluator(), options.GuessCandidatesOnly))
+                {
+                    Console.WriteLine($"\n[{sw.Elapsed:hh\\:mm\\:ss\\.fff}]");
+                    foreach (Score score in move.Scores.Take(10))
+                    {
+                        bool isInSolutions = solutions.Contains(score.Guess);
+                        Console.WriteLine($"  {(isInSolutions ? "*" : " ")} {score.Guess} {score.AverageMatches:0.##} {(score.IsCandidate ? "c" : "")}");
+                    }
+                    Console.WriteLine($"Guess: {move.Guess}? -> {move.Guess.ToFlagString(move.Flags)}");
+                }
             }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return 1;
+            }
+
+            return 0;
         }
     }
 }

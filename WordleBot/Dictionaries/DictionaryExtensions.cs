@@ -5,6 +5,14 @@ namespace WordleBot.Dictionaries
 {
     public static class DictionaryExtensions
     {
+        public static IGameDictionary GetNamedDictionary(this IEnumerable<IGameDictionary> dictionaries, string name)
+        {
+            return name == null
+                ? dictionaries.First()
+                : dictionaries.FirstOrDefault(d => d.Name == name)
+                ?? throw new KeyNotFoundException($"Dictionary not found: {name}");
+        }
+
         public static IReadOnlyList<string> GetVocabulary(this IGameDictionary gameDictionary, int vocabularySize = int.MaxValue)
         {
             return vocabularySize == int.MaxValue

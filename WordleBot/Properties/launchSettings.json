@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Wordle": {
+      "commandName": "Project",
+      "commandLineArgs": "--dictionary=Wordle --vocabulary=5000 --random-solution"
+    },
+    "Worgle": {
+      "commandName": "Project",
+      "commandLineArgs": "--dictionary=Worgle --vocabulary=5000 --random-solution"
+    }
+  }
+}

@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Text;
 using WordleBot.Model;
-using WordleBot.Solver;
 
-namespace WordleBot
+namespace WordleBot.Solver
 {
     internal static class StringExtensions
     {
