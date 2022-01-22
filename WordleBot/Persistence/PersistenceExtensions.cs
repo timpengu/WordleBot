@@ -17,7 +17,6 @@ namespace WordleBot.Persistence
             var file = new ScoresFile(scores.Count, computeTime, scores);
             string path = GetScoresFilePath(scores.Select(c => c.Guess).GetStableHashCode());
 
-            // TODO: serialise to file stream, improve file format?
             string json = JsonSerializer.Serialize(file);
             File.WriteAllText(path, json);
         }
@@ -31,7 +30,6 @@ namespace WordleBot.Persistence
                 return false;
             }
 
-            // TODO: deserialise from file stream
             string json = File.ReadAllText(path);
             var file = JsonSerializer.Deserialize<ScoresFile>(json);
 
