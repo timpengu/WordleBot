@@ -1,48 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using MoreLinq;
 using WordleBot.Model;
-using WordleBot.Persistence;
 
-namespace WordleBot.Solver
+namespace WordleBot.Engine
 {
-    public static class SolverExtensions
+    internal static class SolverExtensions
     {
-        public static Func<string, Flags[]> GetEvaluator(this string solution) => guess => solution.EvaluateGuess(guess);
-        public static bool IsSolved(this Flags[] flags) => flags.All(f => f == Flags.Matched);
-
-        public static IEnumerable<Move> Solve(this IReadOnlyCollection<string> vocabulary, Func<string, Flags[]> evaluator, bool guessCandidatesOnly)
+        public static IEvaluator GetEvaluator(this string solution) => new SolutionEvaluator(solution);
+        public static Flags[] EvaluateGuess(this string solution, string guess)
         {
-            vocabulary.Validate();
-
-            IReadOnlySet<string> candidates = vocabulary.ToHashSet();
-
-            if (!vocabulary.TryLoad(out IReadOnlyCollection<Score> scores))
-            {
-                var sw = Stopwatch.StartNew();
-                scores = vocabulary.CalculateScores(candidates);
-                scores.Save(sw.Elapsed);
-            }
-
-            Flags[] flags;
-            do
-            {
-                string guess = scores.MaxBy(s => s).SingleRandom().Guess;
-                flags = evaluator(guess);
-
-                yield return new Move(scores, guess, flags);
-
-                candidates = candidates.Eliminate(guess, flags).ToHashSet();
-
-                IReadOnlyCollection<string> nextGuesses = (guessCandidatesOnly || candidates.Count == 1) ? candidates : vocabulary;
-                scores = nextGuesses.CalculateScores(candidates);
-            }
-            while (!flags.IsSolved() && candidates.Any());
+            var flags = new Flags[guess.Length];
+            solution.EvaluateGuess(guess, flags);
+            return flags;
         }
 
-        private static IReadOnlyList<Score> CalculateScores(this IEnumerable<string> guesses, IReadOnlySet<string> candidates)
+        public static bool IsSolved(this Flags[] flags) => flags.All(f => f == Flags.Matched);
+
+        public static IEnumerable<string> Eliminate(this IEnumerable<string> candidates, string guess, Flags[] flags)
+        {
+            return candidates.Where(candidate => candidate.IsMatch(guess, flags));
+        }
+
+        public static IReadOnlyList<Score> CalculateScores(this IEnumerable<string> guesses, IReadOnlySet<string> candidates)
         {
             return guesses
                 .AsParallel() // TODO: benchmark whether to parallelise outer or inner loop
@@ -63,11 +43,6 @@ namespace WordleBot.Solver
                     return (double) candidates.CountMatches(guess, flags);
                 })
                 .Average();
-        }
-
-        private static IEnumerable<string> Eliminate(this IEnumerable<string> candidates, string guess, Flags[] flags)
-        {
-            return candidates.Where(candidate => candidate.IsMatch(guess, flags));
         }
 
         private static int CountMatches(this IEnumerable<string> candidates, string guess, ReadOnlySpan<Flags> flags)
@@ -136,13 +111,6 @@ namespace WordleBot.Solver
             return true;
         }
 
-        private static Flags[] EvaluateGuess(this string solution, string guess)
-        {
-            var flags = new Flags[guess.Length];
-            solution.EvaluateGuess(guess, flags);
-            return flags;
-        }
-
         private static void EvaluateGuess(this string solution, string guess, Span<Flags> flags)
         {
             solution.ValidateArgument(guess);
@@ -178,6 +146,6 @@ namespace WordleBot.Solver
         }
 
         // HACK: resolve ambiguous calls to Enumerable.ToHashSet / MoreEnumerable.ToHashSet
-        private static HashSet<T> ToHashSet<T>(this IEnumerable<T> source) => Enumerable.ToHashSet(source);
+        internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> source) => Enumerable.ToHashSet(source);
     }
 }

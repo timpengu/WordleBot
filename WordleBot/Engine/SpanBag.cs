@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace WordleBot.Solver
+namespace WordleBot.Engine
 {
     /// <summary>
     /// Implements an unordered bag using a Span for optimisation

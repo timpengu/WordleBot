@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using WordleBot.Model;
 
-namespace WordleBot.Solver
+namespace WordleBot.Model
 {
     public record Move(IReadOnlyCollection<Score> Scores, string Guess, Flags[] Flags);
 }

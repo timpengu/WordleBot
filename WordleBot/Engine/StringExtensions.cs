@@ -2,7 +2,7 @@
 using System.Text;
 using WordleBot.Model;
 
-namespace WordleBot.Solver
+namespace WordleBot.Engine
 {
     internal static class StringExtensions
     {

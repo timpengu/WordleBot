@@ -1,10 +1,14 @@
 {
   "profiles": {
-    "Wordle": {
+    "Wordle-Solve": {
       "commandName": "Project",
-      "commandLineArgs": "--dictionary=Wordle --vocabulary=5000 --random-solution"
+      "commandLineArgs": "--dictionary=Wordle --vocabulary=5000"
     },
-    "Worgle": {
+    "Wordle-Stats": {
+      "commandName": "Project",
+      "commandLineArgs": "--dictionary=Wordle --vocabulary=5000 --calc-stats"
+    },
+    "Worgle-Solve": {
       "commandName": "Project",
       "commandLineArgs": "--dictionary=Worgle --vocabulary=5000 --random-solution"
     }

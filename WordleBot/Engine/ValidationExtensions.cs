@@ -5,7 +5,7 @@ using System.Linq;
 using MoreLinq;
 using WordleBot.Model;
 
-namespace WordleBot.Solver
+namespace WordleBot.Engine
 {
     internal static class ValidationExtensions
     {

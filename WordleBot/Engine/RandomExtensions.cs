@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MoreLinq;
 
-namespace WordleBot.Solver
+namespace WordleBot.Engine
 {
     public static class RandomExtensions
     {

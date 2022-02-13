@@ -13,6 +13,7 @@ namespace WordleBot
         public int VocabularySize { get; private set; } = int.MaxValue;
         public bool UseRandomSolution { get; private set; }
         public bool GuessCandidatesOnly { get; private set; }
+        public bool CalculateStatistics { get; private set; }
 
         public static Options Parse(string[] args)
         {
@@ -23,6 +24,7 @@ namespace WordleBot
                 { "v|vocabulary=", "use vocabulary size hint", (int value) => options.VocabularySize = value },
                 { "r|random-solution", "run with a random solution", _ => options.UseRandomSolution = true },
                 { "c|candidates-only", "guess matching candidates only", _ => options.GuessCandidatesOnly = true },
+                { "s|calc-stats", "calculate stats over all solutions", _ => options.CalculateStatistics = true },
             };
 
             var usage = new StringBuilder($"Usage:\n");
