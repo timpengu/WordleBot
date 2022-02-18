@@ -22,6 +22,7 @@ namespace WordleBot.Engine
             return candidates.Where(candidate => candidate.IsMatch(guess, flags));
         }
 
+        public static IReadOnlyList<Score> CalculateScores(this IReadOnlySet<string> vocabulary) => vocabulary.CalculateScores(vocabulary);
         public static IReadOnlyList<Score> CalculateScores(this IEnumerable<string> guesses, IReadOnlySet<string> candidates)
         {
             return guesses

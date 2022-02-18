@@ -9,32 +9,29 @@ namespace WordleBot.Engine
 {
     public sealed class Solver
     {
-        private readonly IReadOnlyCollection<string> _vocabulary;
-
-        private readonly IReadOnlySet<string> _initialCandidates;
+        private readonly IReadOnlySet<string> _vocabulary;
         private readonly IReadOnlyCollection<Score> _initialScores;
 
         private readonly bool _guessCandidatesOnly;
 
-        public Solver(IReadOnlyCollection<string> vocabulary, bool guessCandidatesOnly)
+        public Solver(IEnumerable<string> vocabulary, bool guessCandidatesOnly)
         {
-            _vocabulary = vocabulary;
+            _vocabulary = vocabulary.ToHashSet();
             _guessCandidatesOnly = guessCandidatesOnly;
 
             _vocabulary.Validate();
-            _initialCandidates = _vocabulary.ToHashSet();
 
             if (!_vocabulary.TryLoad(out _initialScores))
             {
                 var sw = Stopwatch.StartNew();
-                _initialScores = _vocabulary.CalculateScores(_initialCandidates);
+                _initialScores = _vocabulary.CalculateScores();
                 _initialScores.Save(sw.Elapsed);
             }
         }
 
         public IEnumerable<Move> SolveFor(IEvaluator evaluator)
         {
-            IReadOnlySet<string> candidates = _initialCandidates;
+            IReadOnlySet<string> candidates = _vocabulary;
             IReadOnlyCollection<Score> scores = _initialScores;
             Flags[] flags;
             do
