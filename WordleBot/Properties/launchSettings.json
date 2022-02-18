@@ -4,6 +4,10 @@
       "commandName": "Project",
       "commandLineArgs": "--dictionary=Wordle --vocabulary=5000"
     },
+    "Wordle-SolveUnknownWord": {
+      "commandName": "Project",
+      "commandLineArgs": "--dictionary=Wordle --vocabulary=5000 --word=quang"
+    },
     "Wordle-Stats": {
       "commandName": "Project",
       "commandLineArgs": "--dictionary=Wordle --vocabulary=5000 --calc-stats"

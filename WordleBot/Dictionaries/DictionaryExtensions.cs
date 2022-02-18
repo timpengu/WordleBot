@@ -24,6 +24,7 @@ namespace WordleBot.Dictionaries
                     .ToList();
         }
 
-        public static IEnumerable<string> Normalise(this IEnumerable<string> words) => words.Select(s => s.ToUpperInvariant());
+        public static IEnumerable<string> Normalise(this IEnumerable<string> words) => words.Select(Normalise);
+        public static string Normalise(this string word) => word.ToUpperInvariant();
     }
 }

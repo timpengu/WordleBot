@@ -11,6 +11,7 @@ namespace WordleBot
     {
         public string DictionaryName { get; private set; }
         public int VocabularySize { get; private set; } = int.MaxValue;
+        public string UseSolution { get; private set; }
         public bool UseRandomSolution { get; private set; }
         public bool GuessCandidatesOnly { get; private set; }
         public bool CalculateStatistics { get; private set; }
@@ -22,6 +23,7 @@ namespace WordleBot
             {
                 { "d|dictionary=", "use named dictionary", value => options.DictionaryName = value },
                 { "v|vocabulary=", "use vocabulary size hint", (int value) => options.VocabularySize = value },
+                { "w|word=", "use word as the solution", (string value) => options.UseSolution = value },
                 { "r|random-solution", "run with a random solution", _ => options.UseRandomSolution = true },
                 { "c|candidates-only", "guess matching candidates only", _ => options.GuessCandidatesOnly = true },
                 { "s|calc-stats", "calculate stats over all solutions", _ => options.CalculateStatistics = true },

@@ -39,7 +39,7 @@ namespace WordleBot
                 }
                 else
                 {
-                    string solution = gameDictionary.GetSolution(options.UseRandomSolution);
+                    string solution = GetSolution(options, gameDictionary);
 
                     vocabulary.Solve(
                         solution.GetEvaluator(),
@@ -56,10 +56,15 @@ namespace WordleBot
             return 0;
         }
 
-        private static string GetSolution(this IGameDictionary gameDictionary, bool useRandomSolution)
+        private static string GetSolution(Options options, IGameDictionary gameDictionary)
         {
             string solution;
-            if (useRandomSolution)
+            if (!String.IsNullOrEmpty(options.UseSolution))
+            {
+                solution = options.UseSolution.Normalise();
+                Console.WriteLine($"Seeking solution: {solution}");
+            }
+            else if (options.UseRandomSolution)
             {
                 solution = gameDictionary.Solutions.SingleRandom();
                 Console.WriteLine($"Seeking random solution: {solution}");

@@ -50,7 +50,7 @@ namespace WordleBot.Engine
         }
 
         private IReadOnlyCollection<string> GetNextGuesses(IReadOnlyCollection<string> candidates) =>
-            _guessCandidatesOnly || candidates.Count == 1
+            _guessCandidatesOnly || candidates.Count <= 1
                 ? candidates // guess from remaining candidates only
                 : _vocabulary; // guess from entire vocabulary
     }
